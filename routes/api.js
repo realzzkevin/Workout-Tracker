@@ -1,13 +1,51 @@
-//@ts-check
 const router = require("express").Router();
-const Workout = require("../models/workout.js");
-
-router.get("api/worksouts");
-
-router.post("api/workouts");
-
-router.get("api/workouts/range");
+const mongoose = require("mongoose");
+const db = require('../models');
 
 
+router.get("/workouts", (req, res) => {
+    /*db.Workout.find({}, (error, data) => {
+        if (error) {
+            res.send(error);
+        } else {
+            res.json(data);
+        }
+    });*/
+
+    db.Workout.find({})
+        .populate("exercises")
+        .then(dbWorkout =>{
+            res.json(dbWorkout);
+        })
+        .catch(err => {
+            res.json(err);
+        });
+});
+
+router.post("/workouts", (req, res) => {
+    db.Workout.create(req.body)
+        .then(dbWorkout => {
+            res.json(dbWorkout);
+        })
+        .catch(err => {
+            res.status(400).json(err);
+        });
+});
+
+router.put("/workouts/:id", (req, res) => {
+    console.log(req);
+    db.Exercise.create(req.body)
+        .then(({ _id }) => db.Workout.findOneAndUpdate({ _id: req.params.id }, { $push: { exercises: _id } }, { new: true }))
+        .then(dbWorkout => {
+            res.json(dbWorkout);
+        })
+        .catch(err => {
+            res.json(err);
+        });
+});
+/*
+router.get("/workouts/range");
+
+*/
 
 module.exports = router;
