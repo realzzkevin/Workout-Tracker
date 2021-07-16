@@ -4,22 +4,17 @@ const db = require('../models');
 
 
 router.get("/workouts", (req, res) => {
-    /*db.Workout.find({}, (error, data) => {
-        if (error) {
-            res.send(error);
-        } else {
-            res.json(data);
-        }
-    });*/
+    db.Workout.aggregate([
+        { $addFields: {totalDuration: { $sum: "$exercises.duration"}}},
+    ])
+    .sort({ day: 1})
+    .then(dbWorkout => {
+        res.json(dbWorkout);
+    })
+    .catch(err => {
+        res.status(400).json(err);
+    })
 
-    db.Workout.find({})
-        .populate("exercises")
-        .then(dbWorkout => {
-            res.json(dbWorkout);
-        })
-        .catch(err => {
-            res.json(err);
-        });
 });
 
 router.post("/workouts", (req, res) => {
@@ -33,34 +28,32 @@ router.post("/workouts", (req, res) => {
 });
 
 router.put("/workouts/:id", (req, res) => {
-
-    db.Exercise.create(req.body)
-        .then(({ _id }) => db.Workout.findOneAndUpdate({ _id: req.params.id }, { $push: { exercises: _id } }, { new: true }))
+    db.Workout.findByIdAndUpdate(
+        { _id: req.params.id },
+        { $push: { exercises: req.body } },
+        { new: true }
+    )
         .then(dbWorkout => {
             res.json(dbWorkout);
         })
         .catch(err => {
-            res.json(err);
-        });
+            res.status(400).json(err);
+        })
+
 });
 
 router.get("/workouts/range", (req, res) => {
+
     db.Workout.aggregate([
-        {
-            $lookup: {
-                from: 'workouts',
-                localField: 'excercises',
-                foreignField: '_id',
-                as: 'excercises'
-            }
-        }
+        { $addFields: {totalDuration: { $sum: "$exercises.duration"}}}
     ])
-    .then (dbWorkout => {
+    .then(dbWorkout => {
         res.json(dbWorkout);
     })
     .catch(err => {
-        res.json(err)
-    });
+        res.status(400).json(err);
+    })
+
 });
 
 
