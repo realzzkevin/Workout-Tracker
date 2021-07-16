@@ -14,7 +14,7 @@ router.get("/workouts", (req, res) => {
 
     db.Workout.find({})
         .populate("exercises")
-        .then(dbWorkout =>{
+        .then(dbWorkout => {
             res.json(dbWorkout);
         })
         .catch(err => {
@@ -33,7 +33,7 @@ router.post("/workouts", (req, res) => {
 });
 
 router.put("/workouts/:id", (req, res) => {
-    console.log(req);
+
     db.Exercise.create(req.body)
         .then(({ _id }) => db.Workout.findOneAndUpdate({ _id: req.params.id }, { $push: { exercises: _id } }, { new: true }))
         .then(dbWorkout => {
@@ -43,9 +43,25 @@ router.put("/workouts/:id", (req, res) => {
             res.json(err);
         });
 });
-/*
-router.get("/workouts/range");
 
-*/
+router.get("/workouts/range", (req, res) => {
+    db.Workout.aggregate([
+        {
+            $lookup: {
+                from: 'workouts',
+                localField: 'excercises',
+                foreignField: '_id',
+                as: 'excercises'
+            }
+        }
+    ])
+    .then (dbWorkout => {
+        res.json(dbWorkout);
+    })
+    .catch(err => {
+        res.json(err)
+    });
+});
+
 
 module.exports = router;
